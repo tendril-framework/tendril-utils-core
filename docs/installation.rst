@@ -27,7 +27,6 @@ You will have to ensure the following dependencies are installed and available
 in your python environment by whatever means you usually use.
 
     - six
-    - fs==0.5.4
 
 ``sudo`` may be necessary if you are not installing into a virtual environment.
 
