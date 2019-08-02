@@ -169,7 +169,8 @@ class ConfigManager(object):
         Loads the constants and/or options in the provided list into
         the config namespace.
 
-        :param elements: `list` of :class:`ConfigConstant`or :class:`ConfigOption`
+        :param elements: `list` of :class:`ConfigConstant` or
+                          :class:`ConfigOption`
         :return: None
         """
         _doc_part = []
