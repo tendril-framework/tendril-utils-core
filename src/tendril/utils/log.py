@@ -104,4 +104,6 @@ def get_logger(name, level=None):
     return logger
 
 
+getLogger = get_logger
+
 init()
