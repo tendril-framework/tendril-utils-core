@@ -101,6 +101,8 @@ def get_logger(name, level=None):
     logger = logging.getLogger(name)
     if level is not None:
         logger.setLevel(level)
+    else:
+        logger.setLevel(DEFAULT)
     return logger
 
 
