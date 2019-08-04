@@ -74,12 +74,12 @@ class ConfigOption(ConfigElement):
     @property
     def value(self):
         try:
-            return getattr(self.ctx['_local_config'], self.name)
-        except AttributeError:
+            return self.ctx['_local_config'][self.name]
+        except KeyError:
             pass
         try:
-            return getattr(self.ctx['_instance_config'], self.name)
-        except AttributeError:
+            return self.ctx['_instance_config'][self.name]
+        except KeyError:
             try:
                 return eval(self.default, self.ctx)
             except SyntaxError:
