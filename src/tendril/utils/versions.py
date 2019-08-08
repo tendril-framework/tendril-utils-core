@@ -52,7 +52,7 @@ def _namespace_primary_location(namespace, fpath):
 
 def get_namespace_package_locations(namespace):
     ns_package_names = get_namespace_package_names(namespace)
-    ns_package_files = [pkgutil.get_loader(name).filename
+    ns_package_files = [pkgutil.get_loader(name).get_filename()
                         for name in ns_package_names]
     ns_package_locations = set([_namespace_primary_location(namespace, f)
                                for f in ns_package_files])
