@@ -75,6 +75,8 @@ def init():
         logging.getLogger('matplotlib'),
         logging.getLogger('matplotlib.font_manager'),
         logging.getLogger('matplotlib.backends'),
+        logging.getLogger('parso.python.diff'),
+        logging.getLogger('parso.cache'),
     ]
     for logger in silence:
         logger.setLevel(logging.WARNING)
