@@ -86,7 +86,8 @@ class ConfigOption(ConfigElement):
             pass
 
         try:
-            return self.ctx['_external_configs'].get(self.name)
+            if self.ctx['_external_configs']:
+                return self.ctx['_external_configs'].get(self.name)
         except ExternalConfigKeyError:
             pass
 
