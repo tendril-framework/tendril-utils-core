@@ -86,7 +86,8 @@ class ConfigOption(ConfigElement):
             pass
 
         try:
-            return self.ctx['_external_configs'].get(self.name)
+            if self.ctx['_external_configs']:
+                return self.ctx['_external_configs'].get(self.name)
         except ExternalConfigKeyError:
             pass
 
@@ -106,6 +107,12 @@ class ConfigOptionConstruct(ConfigElement):
     @property
     def value(self):
         raise NotImplementedError
+
+
+class ExternalConfigMissingError(Exception):
+    def __init__(self, source, filetype):
+        self.source = source
+        self.filetype = filetype
 
 
 class ExternalConfigFormatError(Exception):
@@ -160,6 +167,8 @@ class ConfigExternalJSONSource(ConfigExternalSource):
         self._load_external_config()
 
     def _load_external_config(self):
+        if not os.path.exists(os.path.expandvars(self._path)):
+            raise ExternalConfigMissingError(self._path, 'json')
         with open(os.path.expandvars(self._path), 'r') as f:
             self._source = json.load(f)
 
@@ -183,12 +192,15 @@ class ConfigExternalSources(ConfigSourceBase):
     def _load_external_sources(self):
         external_configs = yml.load(self._path)
         for config in external_configs:
-            if config['format'] == 'json':
-                self._sources.append(
-                    ConfigExternalJSONSource(config['path'], config['keymap'])
-                )
-            else:
-                raise ExternalConfigFormatError(config['path'], config['filetype'])
+            try:
+                if config['format'] == 'json':
+                    self._sources.append(
+                        ConfigExternalJSONSource(config['path'], config['keymap'])
+                    )
+                else:
+                    raise ExternalConfigFormatError(config['path'], config['filetype'])
+            except ExternalConfigMissingError:
+                pass
 
     def get(self, key):
         for source in self._sources:
