@@ -98,6 +98,16 @@ class ConfigOption(ConfigElement):
             raise
 
 
+class ConfigOptionConstruct(ConfigElement):
+    def __init__(self, name, parameters, doc):
+        self._parameters = parameters
+        super(ConfigOptionConstruct, self).__init__(name, None, doc)
+
+    @property
+    def value(self):
+        raise NotImplementedError
+
+
 class ExternalConfigFormatError(Exception):
     def __init__(self, source, filetype):
         self.source = source
@@ -282,7 +292,8 @@ class ConfigManager(object):
         the config namespace.
 
         :param elements: `list` of :class:`ConfigConstant` or
-                          :class:`ConfigOption`
+                          :class:`ConfigOption` or
+                          :class:`ConfigOptionConstruct`
         :return: None
         """
         _doc_part = []
