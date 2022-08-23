@@ -30,6 +30,7 @@ def read(fname):
 
 core_dependencies = [
     'six',
+    'tendril-utils-yaml',
 ]
 
 install_requires = core_dependencies + ['wheel']
