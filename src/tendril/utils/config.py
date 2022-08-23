@@ -322,6 +322,10 @@ class ConfigManager(object):
     def EXTERNAL_CONFIG(self):
         return self._external_configs
 
+    @property
+    def ENVIRONMENT_OVERRIDES(self):
+        return self._environment_overrides
+
     def load_elements(self, elements, doc=''):
         """
         Loads the constants and/or options in the provided list into
