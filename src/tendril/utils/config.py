@@ -74,6 +74,10 @@ class ConfigOption(ConfigElement):
     @property
     def value(self):
         try:
+            return self.ctx['_environment_overrides'][self.name]
+        except KeyError:
+            pass
+        try:
             return self.ctx['_local_config'][self.name]
         except KeyError:
             pass
@@ -94,6 +98,7 @@ class ConfigManager(object):
         self._excluded = excluded
         self._instance_config = None
         self._local_config = None
+        self._environment_overrides = None
         self._modules_loaded = []
         self._legacy = None
         self._docs = []
@@ -155,6 +160,15 @@ class ConfigManager(object):
             self._local_config = run_path(self.LOCAL_CONFIG_FILE)
         else:
             self._local_config = {}
+        try:
+            self._environment_overrides = {}
+            if self.ALLOW_ENVIRONMENT_OVERRIDES:
+                if self.ENVIRONMENT_OVERRIDE_PREFIX:
+                    for key, value in os.environ.items():
+                        if key.startswith(self.ENVIRONMENT_OVERRIDE_PREFIX):
+                            self._environment_overrides[key[len(self.ENVIRONMENT_OVERRIDE_PREFIX):]] = value
+        except KeyError:
+            pass
 
     @property
     def INSTANCE_CONFIG(self):
