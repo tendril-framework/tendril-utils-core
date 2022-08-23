@@ -37,10 +37,11 @@ logger = log.get_logger(__name__, log.DEFAULT)
 
 
 class ConfigElement(object):
-    def __init__(self, name, default, doc):
+    def __init__(self, name, default, doc, parser=None):
         self.name = name
         self.default = default
         self.doc = doc
+        self.parser = parser
         self.ctx = None
 
     def doc_render(self):
@@ -72,7 +73,7 @@ class ConfigOption(ConfigElement):
 
     """
     @property
-    def value(self):
+    def raw_value(self):
         try:
             return self.ctx['_environment_overrides'][self.name]
         except KeyError:
@@ -90,6 +91,13 @@ class ConfigOption(ConfigElement):
                 print("Required config option not set in "
                       "instance config : " + self.name)
                 raise
+
+    @property
+    def value(self):
+        if self.parser:
+            return self.parser(self.raw_value)
+        else:
+            return self.raw_value
 
 
 class ConfigManager(object):
@@ -166,6 +174,7 @@ class ConfigManager(object):
                 if self.ENVIRONMENT_OVERRIDE_PREFIX:
                     for key, value in os.environ.items():
                         if key.startswith(self.ENVIRONMENT_OVERRIDE_PREFIX):
+                            logger.info("Environment Config Override : {} : {}".format(key, value))
                             self._environment_overrides[key[len(self.ENVIRONMENT_OVERRIDE_PREFIX):]] = value
         except KeyError:
             pass
