@@ -227,7 +227,8 @@ class ConfigManager(object):
     def __init__(self, prefix, legacy, excluded, appname=None):
         self._prefix = prefix
         self._excluded = excluded
-        self._appname = appname
+        self.APPNAME = appname
+
         self._instance_config = None
         self._local_config = None
         self._external_configs: ConfigExternalSources = None
@@ -235,6 +236,7 @@ class ConfigManager(object):
         self._modules_loaded = []
         self._legacy = None
         self._docs = []
+
         self._load_legacy(legacy)
         self._load_configs()
 
@@ -310,10 +312,6 @@ class ConfigManager(object):
             logger.debug("Loading External Configuration Maps from {0}"
                          "".format(self.EXTERNAL_CONFIG_SOURCES))
             self._external_configs = ConfigExternalSources(self.EXTERNAL_CONFIG_SOURCES)
-
-    @property
-    def APPNAME(self):
-        return self._appname
 
     @property
     def INSTANCE_CONFIG(self):
