@@ -441,3 +441,4 @@ def install_config(manager, instance_name):
                           doc="External Configuration Sources")
 
     manager.load_config_files()
+    

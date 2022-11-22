@@ -61,16 +61,16 @@ def apply_config(config=None):
     if not config:
         from tendril import config
     logging.root.setLevel(config.LOG_LEVEL)
-    logger.configure(handlers=[{"sink": sys.stdout, "serialize": config.JSON_LOGS}])
-    create_log_file(config.LOG_PATH)
+    logger.configure(handlers=[{"sink": sys.stdout, "serialize": False}])
+    create_log_file(config.LOG_PATH, config.JSON_LOGS)
 
 
-def create_log_file(LOG_PATH):
+def create_log_file(LOG_PATH, JSON_LOGS):
     logdir = os.path.split(LOG_PATH)[0]
     if not os.path.exists(logdir):
         os.makedirs(logdir)
-    logger.add(LOG_PATH, level="INFO",
-               rotation="1 week", retention="14 days")
+    logger.add(LOG_PATH, level="INFO", serialize=JSON_LOGS, enqueue=True,
+               rotation="1 week", retention="14 days", catch=True, backtrace=True)
     logging.info("Logging to: {}".format(LOG_PATH))
 
 
