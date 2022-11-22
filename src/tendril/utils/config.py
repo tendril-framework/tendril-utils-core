@@ -31,11 +31,12 @@ TODO Describe Architecture and Usage somewhere
 import os
 import json
 import importlib
+import logging
 from runpy import run_path
 from tendril.utils.versions import get_namespace_package_names
 from tendril.utils.files import yml
-from tendril.utils import log
-logger = log.get_logger(__name__, log.DEFAULT)
+
+logger = logging.getLogger(__name__)
 
 
 class ConfigElement(object):
@@ -352,3 +353,91 @@ class ConfigManager(object):
 
     def doc_render(self):
         return self._docs
+
+
+def generate_constants(instance_name):
+    config_constants_basic = [
+        ConfigConstant(
+            'INSTANCE_NAME',
+            "'{}'".format(instance_name),
+            'Name of the instance. Used to determine configuration and resource paths.'
+        ),
+        ConfigConstant(
+            'INSTANCE_ROOT_CANDIDATES',
+            """list([
+                    os.path.join(os.path.expanduser('~'), '.{}'.format(INSTANCE_NAME)),
+                    os.path.join('/etc', INSTANCE_NAME)
+            ])""",
+            'Paths to search for the INSTANCE_ROOT. First available path will be used.'
+        ),
+        ConfigConstant(
+            'INSTANCE_ROOT',
+            "list(filter(os.path.exists, INSTANCE_ROOT_CANDIDATES))[0]",
+            "Path to the instance root. Can be redirected if necessary"
+            "with a file named ``redirect`` in this folder."
+        ),
+    ]
+
+    config_constants_environment = [
+        ConfigConstant(
+            'ALLOW_ENVIRONMENT_OVERRIDES',
+            "True",
+            'Whether config options can be overridden from the environment.'
+        ),
+        ConfigConstant(
+            'ENVIRONMENT_OVERRIDE_PREFIX',
+            "'{}_'.format(INSTANCE_NAME.upper())",
+            'Environment variable name prefix.'
+        ),
+    ]
+
+    config_constants_redirected = [
+        ConfigConstant(
+            'INSTANCE_CONFIG_FILE',
+            "os.path.join(INSTANCE_ROOT, 'instance_config.py')",
+            'Path to the tendril instance configuration.'
+        ),
+        ConfigConstant(
+            'LOCAL_CONFIG_FILE',
+            "os.path.join(INSTANCE_ROOT, 'local_config_overrides.py')",
+            'Path to local overrides to the instance configuration.'
+        ),
+    ]
+
+    config_constants_external = [
+        ConfigConstant(
+            'EXTERNAL_CONFIG_SOURCES',
+            "os.path.join(INSTANCE_ROOT, 'external_configs.yaml')",
+            "Path to a yaml definition file mapping to external config sources."
+        )
+    ]
+    return config_constants_environment, config_constants_basic, config_constants_redirected, config_constants_external
+
+
+def install_config(manager, instance_name):
+    config_constants_environment, \
+    config_constants_basic, \
+    config_constants_redirected, \
+    config_constants_external = generate_constants(instance_name)
+
+    manager.load_elements(config_constants_basic,
+                          doc="Tendril Default Instance Root")
+
+    manager.load_elements(config_constants_environment,
+                          doc="Environment Variable Override Configuration")
+
+    logger.info("Using Instance Root {}".format(manager.INSTANCE_ROOT))
+
+    if os.path.exists(os.path.join(manager.INSTANCE_ROOT, 'redirect')):
+        logger.info("Found instance redirect")
+        with open(os.path.join(manager.INSTANCE_ROOT, 'redirect'), 'r') as f:
+            manager.INSTANCE_ROOT = f.read().strip()
+            logger.info("Using Redirected Instance Root {}".format(manager.INSTANCE_ROOT))
+
+    manager.load_elements(config_constants_redirected,
+                          doc="Tendril Configuration Paths")
+
+    manager.load_elements(config_constants_external,
+                          doc="External Configuration Sources")
+
+    manager.load_config_files()

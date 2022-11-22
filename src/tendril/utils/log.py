@@ -34,7 +34,11 @@ being able to set the default log level for all modules simultaneously.
 
 """
 
+import os
+import sys
 import logging
+from loguru import logger
+from collections import namedtuple
 
 #: Level for debug entries. High volume is ok
 from logging import DEBUG   # noqa
@@ -53,8 +57,55 @@ from logging import CRITICAL  # noqa
 DEFAULT = logging.WARNING
 
 
+def apply_config(config=None):
+    if not config:
+        from tendril import config
+    logging.root.setLevel(config.LOG_LEVEL)
+    logger.configure(handlers=[{"sink": sys.stdout, "serialize": config.JSON_LOGS}])
+    create_log_file(config.LOG_PATH)
+
+
+def create_log_file(LOG_PATH):
+    logdir = os.path.split(LOG_PATH)[0]
+    if not os.path.exists(logdir):
+        os.makedirs(logdir)
+    logger.add(LOG_PATH, level="INFO",
+               rotation="1 week", retention="14 days")
+    logging.info("Logging to: {}".format(LOG_PATH))
+
+
+class InterceptHandler(logging.Handler):
+    def emit(self, record):
+        # Get corresponding Loguru level if it exists
+        try:
+            level = logger.level(record.levelname).name
+        except ValueError:
+            level = record.levelno
+
+        # Find caller from where originated the logged message
+        frame, depth = logging.currentframe(), 2
+        while frame.f_code.co_filename == logging.__file__:
+            frame = frame.f_back
+            depth += 1
+
+        logger.opt(depth=depth, exception=record.exc_info).log(level, record.getMessage())
+
+
 def init():
-    logging.basicConfig(level=logging.DEBUG)
+    # intercept everything at the root logger
+    logging.root.handlers = [InterceptHandler()]
+    logging.root.setLevel(logging.DEBUG)
+
+    # remove every other logger's handlers
+    # and propagate to root logger
+    for name in logging.root.manager.loggerDict.keys():
+        logging.getLogger(name).handlers = []
+        logging.getLogger(name).propagate = True
+
+    # configure loguru
+    logger.configure(handlers=[{"sink": sys.stdout, "serialize": False}])
+
+    # logging.basicConfig(level=logging.DEBUG)
     silence = [
         logging.getLogger('watchdog.observers.inotify_buffer'),
         logging.getLogger('requests.packages.urllib3.connectionpool'),
@@ -78,8 +129,8 @@ def init():
         logging.getLogger('parso.python.diff'),
         logging.getLogger('parso.cache'),
     ]
-    for logger in silence:
-        logger.setLevel(logging.WARNING)
+    for external_logger in silence:
+        external_logger.setLevel(logging.WARNING)
     logging.getLogger('pika.connection').setLevel(logging.ERROR)
 
 
@@ -100,12 +151,12 @@ def get_logger(name, level=None):
     :type level: int
     :return: The logger instance
     """
-    logger = logging.getLogger(name)
+    built_logger = logging.getLogger(name)
     if level is not None:
-        logger.setLevel(level)
+        built_logger.setLevel(level)
     else:
-        logger.setLevel(DEFAULT)
-    return logger
+        built_logger.setLevel(DEFAULT)
+    return built_logger
 
 
 getLogger = get_logger

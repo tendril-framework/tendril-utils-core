@@ -30,6 +30,7 @@ def read(fname):
 
 core_dependencies = [
     'six',
+    'loguru',
     'tendril-utils-yaml',
 ]
 
