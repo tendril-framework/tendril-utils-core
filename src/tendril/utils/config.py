@@ -285,14 +285,14 @@ class ConfigManager(object):
 
     def load_config_files(self):
         if os.path.exists(self.INSTANCE_CONFIG_FILE):
-            logger.debug("Loading Instance Config from {0}"
+            logger.info("Loading Instance Config from {0}"
                          "".format(self.INSTANCE_CONFIG_FILE))
             self._instance_config = run_path(self.INSTANCE_CONFIG_FILE)
         else:
             self._instance_config = {}
 
         if os.path.exists(self.LOCAL_CONFIG_FILE):
-            logger.debug("Loading Local Config from {0}"
+            logger.info("Loading Local Config from {0}"
                          "".format(self.LOCAL_CONFIG_FILE))
             self._local_config = run_path(self.LOCAL_CONFIG_FILE)
         else:

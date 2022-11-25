@@ -38,7 +38,7 @@ import os
 import sys
 import logging
 from loguru import logger
-from collections import namedtuple
+
 
 #: Level for debug entries. High volume is ok
 from logging import DEBUG   # noqa
@@ -94,7 +94,7 @@ class InterceptHandler(logging.Handler):
 def init():
     # intercept everything at the root logger
     logging.root.handlers = [InterceptHandler()]
-    logging.root.setLevel(logging.DEBUG)
+    logging.root.setLevel(logging.INFO)
 
     # remove every other logger's handlers
     # and propagate to root logger
