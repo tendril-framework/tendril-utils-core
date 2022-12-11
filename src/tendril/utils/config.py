@@ -365,8 +365,9 @@ def generate_constants(instance_name):
         ConfigConstant(
             'INSTANCE_ROOT_CANDIDATES',
             """list([
-                    os.path.join(os.path.expanduser('~'), '.{}'.format(INSTANCE_NAME)),
-                    os.path.join('/etc', INSTANCE_NAME)
+                    os.path.join(os.path.expanduser('~'), '.{}'.format(INSTANCE_NAME), 'tendril'),
+                    os.path.join('/etc', INSTANCE_NAME, 'tendril'),
+                    os.path.join(os.path.expanduser('~'), '.tendril'),
             ])""",
             'Paths to search for the INSTANCE_ROOT. First available path will be used.'
         ),
