@@ -60,6 +60,8 @@ DEFAULT = logging.INFO
 def apply_config(config=None):
     if not config:
         from tendril import config
+    global DEFAULT
+    DEFAULT = config.LOG_LEVEL
     logging.root.setLevel(config.LOG_LEVEL)
     logger.configure(handlers=[{"sink": sys.stdout, "serialize": False}])
     create_log_file(config.LOG_PATH, config.JSON_LOGS)
