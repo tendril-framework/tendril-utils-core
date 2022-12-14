@@ -72,7 +72,8 @@ def create_log_file(LOG_PATH, JSON_LOGS):
     if not os.path.exists(logdir):
         os.makedirs(logdir)
     logger.add(LOG_PATH, level="INFO", serialize=JSON_LOGS, enqueue=True,
-               rotation="1 week", retention="14 days", catch=True, backtrace=True)
+               rotation="1 week", retention="14 days",
+               catch=True, backtrace=True, diagnose=True)
     logging.info("Logging to: {}".format(LOG_PATH))
 
 
