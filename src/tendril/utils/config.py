@@ -66,7 +66,7 @@ class ConfigElement(object):
             return value
 
         v_len = len(value)
-        m_len = min(v_len/4, 8)
+        m_len = int(min(v_len/4, 8))
         return f"{value[:m_len]}...{value[-m_len:]}"
 
 
