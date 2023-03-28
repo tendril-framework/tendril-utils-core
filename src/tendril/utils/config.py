@@ -40,15 +40,34 @@ logger = logging.getLogger(__name__)
 
 
 class ConfigElement(object):
-    def __init__(self, name, default, doc, parser=None):
+    def __init__(self, name, default, doc, parser=None, masked=False):
         self.name = name
         self.default = default
         self.doc = doc
         self.parser = parser
+        self.masked = masked
+        self.source = None
         self.ctx = None
 
     def doc_render(self):
-        return [self.name, self.default, self.doc]
+        return [self.name, self.doc, self.default,
+                self.masked_value, self.source]
+
+    @property
+    def value(self):
+        raise NotImplementedError
+
+    @property
+    def masked_value(self):
+        value = self.value
+        if not self.masked:
+            return value
+        if not isinstance(value, str):
+            return value
+
+        v_len = len(value)
+        m_len = min(v_len/4, 8)
+        return f"{value[:m_len]}...{value[-m_len:]}"
 
 
 class ConfigConstant(ConfigElement):
@@ -61,6 +80,7 @@ class ConfigConstant(ConfigElement):
     """
     @property
     def value(self):
+        self.source = "hardcoded"
         return eval(self.default, self.ctx)
 
 
@@ -78,27 +98,38 @@ class ConfigOption(ConfigElement):
     @property
     def raw_value(self):
         try:
-            return self.ctx['_environment_overrides'][self.name]
-        except KeyError:
-            pass
-        try:
-            return self.ctx['_local_config'][self.name]
+            rv = self.ctx['_environment_overrides'][self.name]
+            self.source = 'environment_override'
+            return rv
         except KeyError:
             pass
 
         try:
-            return self.ctx['_instance_config'][self.name]
+            rv = self.ctx['_local_config'][self.name]
+            self.source = 'local_override'
+            return rv
+        except KeyError:
+            pass
+
+        try:
+            rv = self.ctx['_instance_config'][self.name]
+            self.source = 'instance_config'
+            return rv
         except KeyError:
             pass
 
         try:
             if self.ctx['_external_configs']:
-                return self.ctx['_external_configs'].get(self.name)
+                rv = self.ctx['_external_configs'].get(self.name)
+                self.source = 'external_config'
+                return rv
         except ExternalConfigKeyError:
             pass
 
         try:
-            return eval(self.default, self.ctx)
+            rv = eval(self.default, self.ctx)
+            self.source = 'default'
+            return rv
         except SyntaxError:
             print("Required config option not set in "
                   "instance config : " + self.name)
@@ -351,8 +382,35 @@ class ConfigManager(object):
     def instance_path(self, path):
         return os.path.join(self.INSTANCE_ROOT, path)
 
-    def doc_render(self):
+    @property
+    def docs(self):
         return self._docs
+
+    def doc_render(self):
+        rv = {}
+        for section, name in self._docs:
+            items = {}
+            for oname, doc, default, masked_value, source in section:
+                items[oname] = {'doc': doc, 'default': default,
+                                'value': masked_value, 'source': source}
+            rv[name] = items
+        return rv
+
+    def json_render(self):
+        rv = {}
+        for section, name in self._docs:
+            items = {}
+            for oname, doc, default, masked_value, source in section:
+                items[oname] = {'value': masked_value, 'source': source}
+            rv[name] = items
+        return json.dumps(rv)
+
+    def log_render(self):
+        for section, name in self._docs:
+            logger.info('--------------------------------')
+            logger.info(f"{name.upper()} : ")
+            for oname, _, _, masked_value, source in section:
+                logger.info("    {0:30} :  {1}     ({2})".format(oname, masked_value, source))
 
 
 def generate_constants(instance_name):
