@@ -403,7 +403,7 @@ class ConfigManager(object):
             for oname, doc, default, masked_value, source in section:
                 items[oname] = {'value': masked_value, 'source': source}
             rv[name] = items
-        return json.dumps(rv)
+        return rv
 
     def log_render(self):
         for section, name in self._docs:
