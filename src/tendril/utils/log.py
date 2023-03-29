@@ -36,9 +36,9 @@ being able to set the default log level for all modules simultaneously.
 
 import os
 import sys
+import socket
 import logging
 from loguru import logger
-
 
 #: Level for debug entries. High volume is ok
 from logging import DEBUG   # noqa
@@ -55,6 +55,52 @@ from logging import CRITICAL  # noqa
 #: The default log level for all loggers created through this module,
 #: unless otherwise specified at the time of instantiation.
 DEFAULT = logging.INFO
+_hostname = socket.gethostname()
+_rename_modules = False
+_names = {}
+_source_maxlen = 15
+
+
+def _time_fmt(config):
+    if config.LOG_COMPACT_TS:
+        if config.LOG_COMPACT_TS_READABLE:
+            return '{time:%m-%d %H%M.%S}'
+        return '{time:%s}'
+    return '{time:YYYY-MM-DD HH:mm:ss.SSS}'
+
+
+def _hostname_fmt(config):
+    if config.LOG_INCLUDE_HOSTNAME:
+        if config.LOG_HOSTNAME_PREFIX:
+            return f' | {_hostname.removeprefix(config.LOG_HOSTNAME_PREFIX)}'
+        else:
+            return f' | {_hostname}'
+    return ''
+
+
+def _level_fmt(config):
+    if config.LOG_COMPACT_LEVEL:
+        return '{level.name:^1.1}'
+    if config.LOG_COMPACT_LEVEL_ICON:
+        return '{level.icon:^1}'
+    return '{level: <8}'
+
+
+def _source_fmt(config):
+    if config.LOG_COMPACT_SOURCE:
+        return '{extra[name]}'
+    return '{name}'
+
+
+def _config(config):
+    if config.LOG_COMPACT_SOURCE:
+        global _rename_modules
+        global _source_maxlen
+        _rename_modules = True
+        _source_maxlen = config.LOG_COMPACT_SOURCE_MAXLEN
+        patcher = lambda r: _shortname(r['name'], r['extra'])
+        return patcher
+    return
 
 
 def apply_config(config=None):
@@ -63,18 +109,37 @@ def apply_config(config=None):
     global DEFAULT
     DEFAULT = config.LOG_LEVEL
     logging.root.setLevel(config.LOG_LEVEL)
-    logger.configure(handlers=[{"sink": sys.stdout, "serialize": False}])
-    create_log_file(config.LOG_PATH, config.JSON_LOGS)
+
+    patcher = _config(config)
+
+    fmt = "<green>" + _time_fmt(config) + _hostname_fmt(config) + "</green> | " \
+          "<level>" + _level_fmt(config) + "</level> | " \
+          "<cyan>" + _source_fmt(config) + "</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> " \
+          "- {message}"
+
+    params = {
+        'handlers': [{"sink": sys.stdout, "serialize": False, "format": fmt}],
+    }
+    if patcher:
+        params['patcher'] = patcher
+    logger.configure(**params)
+    create_log_file(config)
 
 
-def create_log_file(LOG_PATH, JSON_LOGS):
-    logdir = os.path.split(LOG_PATH)[0]
+def create_log_file(config):
+    logdir = os.path.split(config.LOG_PATH)[0]
     if not os.path.exists(logdir):
         os.makedirs(logdir)
-    logger.add(LOG_PATH, level="INFO", serialize=JSON_LOGS, enqueue=True,
-               rotation="1 week", retention="14 days",
+
+    fmt = "<green>" + _time_fmt(config) + _hostname_fmt(config) + "</green> | " \
+          "<level>" + _level_fmt(config) + "</level> | " \
+          "<cyan>" + _source_fmt(config) + "</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> " \
+          "- {message}"
+
+    logger.add(config.LOG_PATH, level="INFO", serialize=config.JSON_LOGS, enqueue=True,
+               rotation="1 week", retention="14 days", format=fmt,
                catch=True, backtrace=True, diagnose=True)
-    logging.info("Logging to: {}".format(LOG_PATH))
+    logging.info("Logging to: {}".format(config.LOG_PATH))
 
 
 class InterceptHandler(logging.Handler):
@@ -137,6 +202,76 @@ def init():
     logging.getLogger('pika.connection').setLevel(logging.ERROR)
 
 
+def _shortname(name, extra):
+    extra["name"] = _names.get(name, name)
+
+
+_std_abbreviate = {'tendril': 't', 'libraries': 'lib'}
+_never_abbreviate = ['db', 'config']
+_never_abbreviate_before = []
+_never_abbreviate_after = []
+
+
+def _tlen(parts):
+    return sum([len(x) for x in parts]) + len(parts) - 1
+
+
+def _recalculate_names():
+    global _names
+    maxlen = _source_maxlen
+    tokens = {}
+    for name in _names.keys():
+        parts = name.split('.')[:-1]
+        for part in parts:
+            current = tokens.get(part, {'abbrev': part, 'count': 0})
+            current['count'] = current['count'] + 1
+            tokens[part] = current
+    for token in sorted(tokens.keys(), key=lambda x: tokens[x]['count'], reverse=True):
+        if token in _std_abbreviate.keys():
+            tokens[token]['abbrev'] = _std_abbreviate[token]
+            done = True
+        elif token in _never_abbreviate:
+            tokens[token]['abbrev'] = token
+            done = True
+        else:
+            done = False
+        alen = 0
+        while not done:
+            alen = alen + 1
+            abbrev = token[:alen]
+            if abbrev not in [tokens[x]['abbrev'] for x in tokens.keys()]:
+                tokens[token]['abbrev'] = abbrev
+                done = True
+    for name in _names.keys():
+        parts = name.split('.')
+        for idx, part in enumerate(parts[:-1]):
+            if part in _never_abbreviate:
+                continue
+            try:
+                if parts[idx + 1] in _never_abbreviate_before:
+                    continue
+            except IndexError:
+                pass
+            try:
+                if parts[idx - 1] in _never_abbreviate_after:
+                    continue
+            except IndexError:
+                pass
+            if _tlen(parts) > maxlen:
+                parts[idx] = tokens[part]['abbrev'] + '.'
+            else:
+                break
+        _names[name] = '.'.join(parts)
+
+
+def _register_name(name):
+    global _names
+    _names[name] = name
+    if not _rename_modules:
+        return
+    _recalculate_names()
+
+
 def get_logger(name, level=None):
     """
     Get a logger with the specified ``name`` and an optional ``level``.
@@ -159,6 +294,8 @@ def get_logger(name, level=None):
         built_logger.setLevel(level)
     else:
         built_logger.setLevel(DEFAULT)
+    if name not in _names.keys():
+        _register_name(name)
     return built_logger
 
 
