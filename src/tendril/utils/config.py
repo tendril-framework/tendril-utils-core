@@ -59,6 +59,21 @@ class ConfigElement(object):
 
     @property
     def masked_value(self):
+        """Return a masked version of the value of the option.
+
+        If the option is not to be masked, the value is returned unchanged. 
+        If the field is to be masked, the masked value is returned. The masking 
+        algorithm is as follows:
+
+        * If the value is not a string, it is returned unchanged.
+        * If the value is a string, the first 8 characters (or 1/8 of the string, 
+          whichever is shorter) are returned, followed by ellipses and the last 
+          8 characters (or 1/8 of the string, whichever is shorter)
+
+        (doc generated mostly by GitHub Copilot)
+        Returns:
+            str: The masked value of the field.
+        """
         value = self.value
         if not self.masked:
             return value
@@ -66,7 +81,7 @@ class ConfigElement(object):
             return value
 
         v_len = len(value)
-        m_len = int(min(v_len/4, 8))
+        m_len = int(min(v_len/8, 8))
         return f"{value[:m_len]}...{value[-m_len:]}"
 
 
@@ -137,6 +152,14 @@ class ConfigOption(ConfigElement):
 
     @property
     def value(self):
+        """Get the value of the property.
+
+        If a parser is defined, the value returned is the result of
+        applying the parser to the raw value of the property. Otherwise,
+        the raw value is returned.
+
+        (doc generated mostly by GitHub Copilot)
+        """
         if self.parser:
             return self.parser(self.raw_value)
         else:
@@ -211,12 +234,29 @@ class ConfigExternalJSONSource(ConfigExternalSource):
         self._load_external_config()
 
     def _load_external_config(self):
+        """
+        This function loads the external config file into a dictionary
+
+        The external config file is a json file that contains some
+        configuration parameters for the application.
+
+        (doc generated mostly by GitHub Copilot)
+        """
         if not os.path.exists(os.path.expandvars(self._path)):
             raise ExternalConfigMissingError(self._path, 'json')
         with open(os.path.expandvars(self._path), 'r') as f:
             self._source = json.load(f)
 
     def _get(self, key_path):
+        """Return the value at the end of the key_path.
+
+        key_path is a string of the form 'key1:key2:key3' where each key
+        is a key in a dict. This function will return the value of key3
+        in the dict d[key1][key2]. If key1, key2, or key3 do not exist,
+        a ConfigSourceDoesNotContainKey error will be raised.
+
+        (doc generated mostly by GitHub Copilot)
+        """
         rval = self._source
         try:
             for crumb in key_path.split(':'):
@@ -234,6 +274,15 @@ class ConfigExternalSources(ConfigSourceBase):
         self._load_external_sources()
 
     def _load_external_sources(self):
+        """
+        This method loads the external config files from the given path.
+        It iterates over each config and determines the format of the file.
+        If the format is JSON, it will create a ConfigExternalJSONSource object
+        and add it to the list of sources. If the file format is not supported,
+        it will raise an ExternalConfigFormatError.
+
+        (doc generated mostly by GitHub Copilot)
+        """
         external_configs = yml.load(self._path)
         for config in external_configs:
             try:
@@ -247,6 +296,25 @@ class ConfigExternalSources(ConfigSourceBase):
                 pass
 
     def get(self, key):
+        """Return the value associated with the key in the configured 
+        external sources.
+
+        Returns the value associated with the key in the first source
+        that has the key. If the key is not found in any of the sources,
+        raise ExternalConfigKeyError.
+
+        (doc generated mostly by GitHub Copilot)
+
+        Args:
+            key (str): The key to search for.
+
+        Returns:
+            The value associated with the key.
+
+        Raises:
+            ExternalConfigKeyError: If the key is not found in any of
+                the sources.
+        """
         for source in self._sources:
             try:
                 return source.get(key)
@@ -256,6 +324,12 @@ class ConfigExternalSources(ConfigSourceBase):
 
 
 class ConfigManager(object):
+    """The ConfigManager class provides a consistent interface for accessing
+    configuration information from a variety of sources. It is intended to be
+    a singleton.
+
+    (doc generated mostly by GitHub Copilot)
+    """
     def __init__(self, prefix, legacy, excluded, appname=None):
         self._prefix = prefix
         self._excluded = excluded
@@ -289,6 +363,17 @@ class ConfigManager(object):
         return self._legacy
 
     def _load_configs(self):
+        """Load configuration elements from modules.
+
+        This method will load configuration elements from modules in the 
+        current namespace. It will respect the dependency order specified 
+        in the depends attribute of each module while loading. If any 
+        dependencies are not satisfied, the module will be skipped until 
+        it is. If a module is skipped and there are no remaining modules
+        to load, an error will be logged.
+
+        (doc generated mostly by GitHub Copilot)
+        """
         logger.debug("Loading configuration from {0}".format(self._prefix))
         modules = list(get_namespace_package_names(self._prefix))
         changed = True
@@ -315,6 +400,13 @@ class ConfigManager(object):
             modules = remaining_modules
 
     def load_config_files(self):
+        """ Loads the configuration from different sources to 
+        populate the unified config object
+
+        (doc generated mostly by GitHub Copilot)
+
+        :return: None
+        """
         if os.path.exists(self.INSTANCE_CONFIG_FILE):
             logger.info("Loading Instance Config from {0}"
                          "".format(self.INSTANCE_CONFIG_FILE))
@@ -387,6 +479,32 @@ class ConfigManager(object):
         return self._docs
 
     def doc_render(self):
+        """Returns a dictionary of documentation for the options.
+
+        The dictionary is keyed by the names of the option groups. 
+        The value for each group is a dictionary keyed by the names 
+        of the options in that group. 
+        
+        Each option value is a dictionary with the keys:
+        
+        doc
+            The documentation string for the option.
+
+        default
+            The default value for the option.
+
+        value
+            The value of the option after all configuration files have been
+            read.
+
+        source
+            The filename of the configuration file from which the option was
+            read, or None if the option was not read from a configuration
+            file.
+
+        (doc generated mostly by GitHub Copilot)
+
+        """
         rv = {}
         for section, name in self._docs:
             items = {}
@@ -397,6 +515,37 @@ class ConfigManager(object):
         return rv
 
     def json_render(self):
+        """Render the config as a dict suitable for JSON encoding.
+
+        The structure is as follows:
+
+            {
+                'section1': {
+                    'item1': {
+                        'value': 'value1',
+                        'source': 'source1',
+                    },
+                    'item2': {
+                        'value': 'value2',
+                        'source': 'source2',
+                    },
+                },
+                'section2': {
+                    'item1': {
+                        'value': 'value1',
+                        'source': 'source1',
+                    },
+                    'item2': {
+                        'value': 'value2',
+                        'source': 'source2',
+                    },
+                },
+            }
+
+        (doc generated mostly by GitHub Copilot)
+
+        :returns: a dict of the config.
+        """
         rv = {}
         for section, name in self._docs:
             items = {}
@@ -406,6 +555,13 @@ class ConfigManager(object):
         return rv
 
     def log_render(self):
+        """This method logs the rendered configuration. It loops through
+        the sections and names of the configuration, and prints the
+        value of each option, as well as its source (the file in which
+        it was defined). The value is masked if the option is sensitive.
+
+        (doc generated mostly by GitHub Copilot)
+        """
         for section, name in self._docs:
             logger.info('--------------------------------')
             logger.info(f"{name.upper()} : ")

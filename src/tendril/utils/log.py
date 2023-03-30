@@ -62,6 +62,31 @@ _source_maxlen = 15
 
 
 def _time_fmt(config):
+    """
+    Return a time format string for use with the log formatter.
+
+    The returned string is used by the log formatter to format the time
+    portion of the log message.
+
+    The time format string is determined by the configuration options
+    LOG_COMPACT_TS and LOG_COMPACT_TS_READABLE.
+
+    LOG_COMPACT_TS is a boolean option that determines whether the log
+    formatter should use a compact format for the time portion of the log
+    message.
+
+    LOG_COMPACT_TS_READABLE is a boolean option that determines whether the
+    log formatter should use a human-readable format for the time portion of
+    the log message when the compact format is selected.
+
+    (doc generated mostly by GitHub Copilot)
+    
+    Args:
+        config: A Config object.
+
+    Returns:
+        A format string for use with the log formatter.
+    """
     if config.LOG_COMPACT_TS:
         if config.LOG_COMPACT_TS_READABLE:
             return '{time:%m-%d %H%M.%S}'
@@ -70,6 +95,12 @@ def _time_fmt(config):
 
 
 def _hostname_fmt(config):
+    """Add hostname to message if LOG_INCLUDE_HOSTNAME is set.
+
+    If LOG_HOSTNAME_PREFIX is set, remove it from the hostname.
+
+    (doc generated mostly by GitHub Copilot)
+    """
     if config.LOG_INCLUDE_HOSTNAME:
         if config.LOG_HOSTNAME_PREFIX:
             return f' | {_hostname.removeprefix(config.LOG_HOSTNAME_PREFIX)}'
@@ -79,6 +110,12 @@ def _hostname_fmt(config):
 
 
 def _level_fmt(config):
+    """Return a format string that will be used to format the log level.
+    The log level can be displayed as a compact string, a compact icon, or a
+    full name.
+    
+    (doc generated mostly by GitHub Copilot)
+    """
     if config.LOG_COMPACT_LEVEL:
         return '{level.name:^1.1}'
     if config.LOG_COMPACT_LEVEL_ICON:
@@ -87,12 +124,23 @@ def _level_fmt(config):
 
 
 def _source_fmt(config):
+    """Return a format string that will format the message source.
+    
+    (doc generated mostly by GitHub Copilot)"""
     if config.LOG_COMPACT_SOURCE:
         return '{extra[name]}'
     return '{name}'
 
 
 def _config(config):
+    """ If the config LOG_COMPACT_SOURCE set to True, then we 
+    patch each record to include a shorter version of the module name. 
+    This compacted string is set in the 'extra' dictionary of the 
+    record and the 'name' field is not modified. This is done to avoid 
+    any potential side effects within the logging system.
+    
+    (doc generated mostly by GitHub Copilot)
+    """
     if config.LOG_COMPACT_SOURCE:
         global _rename_modules
         global _source_maxlen
@@ -217,6 +265,27 @@ def _tlen(parts):
 
 
 def _recalculate_names():
+    """This function is used to calculate the names of the
+    modules that are used in the log messages. The names 
+    thus calculated are stored in the _names dictionary and 
+    used later via _shortname for each log message. This 
+    dictionary contains the full name of the module as the 
+    key, and the shortened name as the value.
+    
+    The shortened name is calculated by splitting the name 
+    into a list of parts, and then abbreviating the parts 
+    as needed using the tokens dictionary, which is 
+    recalculated at every call to this function. 
+    
+    The parts are abbreviated if the length of the parts 
+    list is greater than the maximum length, and if the 
+    part is not in the list of parts that should never be 
+    abbreviated.
+    
+    The parts of the name are abbreviated by abbreviating 
+    the part to the shortest unique abbreviation.
+    
+    (doc generated mostly by GitHub Copilot)""" 
     global _names
     maxlen = _source_maxlen
     tokens = {}
