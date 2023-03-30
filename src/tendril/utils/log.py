@@ -162,7 +162,7 @@ def apply_config(config=None):
 
     fmt = "<green>" + _time_fmt(config) + _hostname_fmt(config) + "</green> | " \
           "<level>" + _level_fmt(config) + "</level> | " \
-          "<cyan>" + _source_fmt(config) + "</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> " \
+          "<cyan><i>" + _source_fmt(config) + "</i></cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> " \
           "- <level><n>{message}</n></level>"
 
     params = {
@@ -182,7 +182,7 @@ def create_log_file(config):
     fmt = "<green>" + _time_fmt(config) + _hostname_fmt(config) + "</green> | " \
           "<level>" + _level_fmt(config) + "</level> | " \
           "<cyan>" + _source_fmt(config) + "</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> " \
-          "- {message}"
+          "- <level><n>{message}</n></level>"
 
     logger.add(config.LOG_PATH, level="INFO", serialize=config.JSON_LOGS, enqueue=True,
                rotation="1 week", retention="14 days", format=fmt,
