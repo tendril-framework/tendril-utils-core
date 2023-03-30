@@ -163,7 +163,7 @@ def apply_config(config=None):
     fmt = "<green>" + _time_fmt(config) + _hostname_fmt(config) + "</green> | " \
           "<level>" + _level_fmt(config) + "</level> | " \
           "<cyan>" + _source_fmt(config) + "</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> " \
-          "- {message}"
+          "- <level><n>{message}</n></level>"
 
     params = {
         'handlers': [{"sink": sys.stdout, "serialize": False, "format": fmt}],
