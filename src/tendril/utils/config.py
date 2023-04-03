@@ -33,6 +33,7 @@ import json
 import importlib
 import logging
 from runpy import run_path
+from distutils.util import strtobool
 from tendril.utils.versions import get_namespace_package_names
 from tendril.utils.files import yml
 
@@ -85,6 +86,13 @@ class ConfigElement(object):
         return f"{value[:m_len]}...{value[-m_len:]}"
 
 
+def bool_parser(value):
+    if isinstance(value, str):
+        return strtobool(value)
+    else:
+        return bool(value)
+
+
 class ConfigConstant(ConfigElement):
     """
     A configuration `constant`. This is fully specified in the core
@@ -121,7 +129,7 @@ class ConfigOption(ConfigElement):
 
         try:
             rv = self.ctx['_local_config'][self.name]
-            self.source = 'local_override'
+            self.source = 'localboo_override'
             return rv
         except KeyError:
             pass
@@ -161,6 +169,8 @@ class ConfigOption(ConfigElement):
         (doc generated mostly by GitHub Copilot)
         """
         if self.parser:
+            if self.parser == bool:
+                return bool_parser(self.raw_value)
             return self.parser(self.raw_value)
         else:
             return self.raw_value
