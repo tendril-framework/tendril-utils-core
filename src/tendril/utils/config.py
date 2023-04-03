@@ -87,6 +87,8 @@ class ConfigElement(object):
 
 
 def bool_parser(value):
+    if not value:
+        return False
     if isinstance(value, str):
         return strtobool(value)
     else:
