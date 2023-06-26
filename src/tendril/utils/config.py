@@ -131,7 +131,7 @@ class ConfigOption(ConfigElement):
 
         try:
             rv = self.ctx['_local_config'][self.name]
-            self.source = 'localboo_override'
+            self.source = 'local_override'
             return rv
         except KeyError:
             pass
