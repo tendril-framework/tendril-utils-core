@@ -59,6 +59,7 @@ _hostname = socket.gethostname()
 _rename_modules = False
 _names = {}
 _source_maxlen = 15
+identifier = None
 
 
 def _time_fmt(config):
@@ -155,12 +156,14 @@ def apply_config(config=None):
     if not config:
         from tendril import config
     global DEFAULT
+    global identifier
     DEFAULT = config.LOG_LEVEL
     logging.root.setLevel(config.LOG_LEVEL)
 
     patcher = _config(config)
+    identifier = _hostname_fmt(config)
 
-    fmt = "<green>" + _time_fmt(config) + _hostname_fmt(config) + "</green> | " \
+    fmt = "<green>" + _time_fmt(config) + identifier + "</green> | " \
           "<level>" + _level_fmt(config) + "</level> | " \
           "<cyan><i>" + _source_fmt(config) + "</i></cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> " \
           "- <level><n>{message}</n></level>"
