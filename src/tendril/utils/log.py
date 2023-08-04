@@ -258,7 +258,7 @@ def _shortname(name, extra):
 
 
 _std_abbreviate = {'tendril': 't', 'libraries': 'lib'}
-_never_abbreviate = ['db', 'config']
+_never_abbreviate = ['db', 'config', 'mq']
 _never_abbreviate_before = []
 _never_abbreviate_after = []
 
