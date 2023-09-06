@@ -40,6 +40,14 @@ from tendril.utils.files import yml
 logger = logging.getLogger(__name__)
 
 
+def is_jsonable(x):
+    try:
+        json.dumps(x)
+        return True
+    except:
+        return False
+
+
 class ConfigElement(object):
     def __init__(self, name, default, doc, parser=None, masked=False):
         self.name = name
@@ -52,7 +60,7 @@ class ConfigElement(object):
 
     def doc_render(self):
         return [self.name, self.doc, self.default,
-                self.masked_value, self.source]
+                self.jsonable_value, self.source]
 
     @property
     def value(self):
@@ -84,6 +92,13 @@ class ConfigElement(object):
         v_len = len(value)
         m_len = int(min(v_len/8, 8))
         return f"{value[:m_len]}...{value[-m_len:]}"
+
+    @property
+    def jsonable_value(self):
+        if is_jsonable(self.masked_value):
+            return self.masked_value
+        else:
+            return str(self.masked_value)
 
 
 def bool_parser(value):
