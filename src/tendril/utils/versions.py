@@ -32,6 +32,7 @@ TODO Describe Architecture and Usage somewhere
 from __future__ import print_function
 
 import os
+import rich
 import pkg_resources
 import pkgutil
 import importlib
@@ -59,6 +60,18 @@ def get_namespace_package_locations(namespace):
     return ns_package_locations
 
 
+_prefixes = {'tendril'}
+_packages = set()
+
+
+def register_prefix(prefix):
+    _prefixes.add(prefix)
+
+
+def register_package(package):
+    _packages.add(package)
+
+
 def get_version(package):
     try:
         return pkg_resources.get_distribution(package).version
@@ -83,12 +96,25 @@ class FeatureUnavailable(Exception):
                "{1}.".format(self._feature, self._provider)
 
 
+def versions():
+    rv = {}
+    for package in _packages:
+        rv[package] = get_version(package)
+    for prefix in _prefixes:
+        val = {}
+        _vers = get_versions(prefix)
+        for name, version in _vers:
+            val[name] = version
+        rv[prefix] = val
+    return rv
+
+
 def main():
-    print(' {0:34} : {1}'.format('Tendril Version',
-                                 get_version('tendril-framework')))
-    print(' Installed Components : ')
-    for package, version in get_versions('tendril'):
-        print('   {0:32} : {1}'.format(package, version))
+    try:
+        from tendril import config
+    except ImportError:
+        pass
+    rich.print_json(data=versions())
 
 
 if __name__ == '__main__':
