@@ -604,12 +604,6 @@ def generate_constants(instance_name):
             'Name of the instance. Used to determine configuration and resource paths.'
         ),
         ConfigConstant(
-            'COMPONENT_NAME',
-            "''",
-            "Name of the component. To be used for log generation and identification "
-            "of source component on platform level artefacts."
-        ),
-        ConfigConstant(
             'INSTANCE_ROOT_CANDIDATES',
             """list([
                     os.path.join(os.path.expanduser('~'), '.{}'.format(INSTANCE_NAME), 'tendril'),
