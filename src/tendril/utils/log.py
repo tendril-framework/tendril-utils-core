@@ -61,6 +61,9 @@ _names = {}
 _source_maxlen = 15
 identifier = None
 
+logger_levels = {}
+loggers = {}
+
 
 def _time_fmt(config):
     """
@@ -157,6 +160,8 @@ def apply_config(config=None):
         from tendril import config
     global DEFAULT
     global identifier
+    global logger_levels
+    logger_levels = {k: logging.getLevelName(v) for k, v in config.LOG_LOGGER_LEVELS.items()}
     DEFAULT = config.LOG_LEVEL
     logging.root.setLevel(config.LOG_LEVEL)
 
@@ -361,14 +366,32 @@ def get_logger(name, level=None):
     :type level: int
     :return: The logger instance
     """
+    global loggers
+    if name in loggers.keys():
+        return loggers[name]
     built_logger = logging.getLogger(name)
     if level is not None:
         built_logger.setLevel(level)
+    elif name in logger_levels.keys():
+        built_logger.setLevel(logger_levels[name])
     else:
         built_logger.setLevel(DEFAULT)
     if name not in _names.keys():
         _register_name(name)
+    loggers[name] = built_logger
     return built_logger
+
+
+def set_logger_level(name, level):
+    if name not in loggers.keys():
+        return
+    if isinstance(level, str):
+        level = logging.getLevelName(level)
+    loggers[name].setLevel(level)
+
+
+def known_loggers():
+    return {k: v.level for k, v in loggers.items()}
 
 
 getLogger = get_logger
