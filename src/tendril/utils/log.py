@@ -252,6 +252,7 @@ def init():
         logging.getLogger('matplotlib.backends'),
         logging.getLogger('parso.python.diff'),
         logging.getLogger('parso.cache'),
+        logging.getLogger('grafana_client.api')
     ]
     for external_logger in silence:
         external_logger.setLevel(logging.WARNING)
