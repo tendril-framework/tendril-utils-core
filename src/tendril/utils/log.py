@@ -59,7 +59,7 @@ _hostname = socket.gethostname()
 _rename_modules = False
 _names = {}
 _source_maxlen = 15
-identifier = None
+identifier = ''
 
 logger_levels = {}
 loggers = {}
@@ -164,22 +164,17 @@ def apply_config(config=None):
     logger_levels = {k: logging.getLevelName(v) for k, v in config.LOG_LOGGER_LEVELS.items()}
     DEFAULT = config.LOG_LEVEL
     logging.root.setLevel(config.LOG_LEVEL)
-
-    patcher = _config(config)
     identifier = _hostname_fmt(config)
 
-    fmt = "<green>" + _time_fmt(config) + identifier + "</green> | " \
-          "<level>" + _level_fmt(config) + "</level> | " \
-          "<cyan><i>" + _source_fmt(config) + "</i></cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> " \
-          "- <level><n>{message}</n></level>"
-
-    params = {
-        'handlers': [{"sink": sys.stdout, "serialize": False, "format": fmt}],
-    }
-    if patcher:
-        params['patcher'] = patcher
-    logger.configure(**params)
+    configure_console_logs(config)
     create_log_file(config)
+
+
+def _log_fmt(config):
+    return "<green>" + _time_fmt(config) + identifier + "</green> | " \
+          "<level>" + _level_fmt(config) + "</level> | " \
+          "<cyan>" + _source_fmt(config) + "</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> " \
+          "- <level><n>{message}</n></level>"
 
 
 def create_log_file(config):
@@ -187,23 +182,42 @@ def create_log_file(config):
     if not os.path.exists(logdir):
         os.makedirs(logdir)
 
-    fmt = "<green>" + _time_fmt(config) + _hostname_fmt(config) + "</green> | " \
-          "<level>" + _level_fmt(config) + "</level> | " \
-          "<cyan>" + _source_fmt(config) + "</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> " \
-          "- <level><n>{message}</n></level>"
-
+    fmt = _log_fmt(config)
     logger.add(config.LOG_PATH, level="INFO", serialize=config.JSON_LOGS, enqueue=True,
                rotation="1 week", retention="14 days", format=fmt,
                catch=True, backtrace=True, diagnose=True)
     logging.info("Logging to: {}".format(config.LOG_PATH))
 
 
+def configure_console_logs(config):
+    patcher = _config(config)
+    fmt = _log_fmt(config)
+    params = {
+        'handlers': [{"sink": sys.stdout, "serialize": False, "format": fmt,
+                      'catch': True, 'backtrace': True, 'diagnose': True}],
+    }
+    if patcher:
+        params['patcher'] = patcher
+    logger.configure(**params)
+
+
 class InterceptHandler(logging.Handler):
+    loglevel_mapping = {
+        50: 'CRITICAL',
+        40: 'ERROR',
+        30: 'WARNING',
+        20: 'INFO',
+        10: 'DEBUG',
+        0: 'NOTSET',
+    }
+
     def emit(self, record):
         # Get corresponding Loguru level if it exists
         try:
             level = logger.level(record.levelname).name
-        except ValueError:
+        except AttributeError:
+            level = self.loglevel_mapping[record.levelno]
+        except KeyError:
             level = record.levelno
 
         # Find caller from where originated the logged message
@@ -226,7 +240,7 @@ def init():
         logging.getLogger(name).handlers = []
         logging.getLogger(name).propagate = True
 
-    # configure loguru
+    # bootstrap loguru
     logger.configure(handlers=[{"sink": sys.stdout, "serialize": False}])
 
     # logging.basicConfig(level=logging.DEBUG)
