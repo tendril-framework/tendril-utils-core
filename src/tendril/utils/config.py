@@ -170,7 +170,7 @@ class ConfigOption(ConfigElement):
             rv = eval(self.default, self.ctx)
             self.source = 'default'
             return rv
-        except SyntaxError:
+        except (SyntaxError, NameError):
             print("Required config option not set in "
                   "instance config : " + self.name)
             raise
