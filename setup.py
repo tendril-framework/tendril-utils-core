@@ -54,7 +54,7 @@ setup(
     author_email="shashank@chintal.in",
     description="Core utilities for tendril",
     long_description='\n'.join([read('README.rst'), read('CHANGELOG.rst')]),
-    # long_description_content_type='text/x-rst',
+    long_description_content_type='text/x-rst',
     keywords='tendril',
     url='https://github.com/tendril-framework/tendril-utils-core',
     project_urls={

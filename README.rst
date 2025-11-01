@@ -1,4 +1,5 @@
 
+Introduction
 
 .. image:: https://img.shields.io/pypi/v/tendril-utils-core.svg?logo=pypi
     :target: https://pypi.org/project/tendril-utils-core
@@ -21,28 +22,9 @@
 .. image:: https://img.shields.io/pypi/l/tendril-utils-core.svg
     :target: https://www.gnu.org/licenses/agpl-3.0.en.html
 
-
-
-.. inclusion-marker-do-not-remove
-
-.. raw:: latex
-
-       \vspace*{\fill}
-
-Introduction
-------------
-
 TODO Some brief introduction
 
-.. raw:: latex
-
-    \clearpage
-    \tableofcontents
-    \clearpage
-
-
 Package Information
--------------------
 
 The latest version of the documentation, including installation, usage, and
 API/developer notes can be found at
@@ -60,4 +42,3 @@ for a full list of collaborators and/or contributing authors, if any.
 ``tendril-utils-core`` is distributed under the terms of the
 `AGPLv3 license <https://www.gnu.org/licenses/agpl-3.0.en.html>`_ .
 A copy of the text of the license is included along with the sources.
-
