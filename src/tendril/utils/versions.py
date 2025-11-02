@@ -33,9 +33,9 @@ from __future__ import print_function
 
 import os
 import rich
-import pkg_resources
 import pkgutil
 import importlib
+from importlib import metadata
 
 
 def get_namespace_package_names(namespace):
@@ -74,16 +74,19 @@ def register_package(package):
 
 def get_version(package):
     try:
-        return pkg_resources.get_distribution(package).version
-    except pkg_resources.DistributionNotFound:
+        return metadata.version(package)
+    except metadata.PackageNotFoundError:
         return 'Not Installed'
 
 
 def get_versions(prefix):
-    return sorted([(d.project_name, d.version)
-                   for d in pkg_resources.working_set
-                   if d.project_name.startswith(prefix)],
-                  key=lambda x: x[0])
+    packages = []
+    for dist in metadata.distributions():
+        name = dist.metadata["Name"]
+        version = dist.version
+        if name and name.startswith(prefix):
+            packages.append((name, version))
+    return sorted(packages, key=lambda x: x[0])
 
 
 class FeatureUnavailable(Exception):
